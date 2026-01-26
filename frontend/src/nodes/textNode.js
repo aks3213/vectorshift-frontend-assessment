@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import styled from '@emotion/styled';
-import { createNode, createNodeConfig, CommonHandles } from '../components/nodeFactory';
+import { createNode, createNodeConfig } from '../components/nodeFactory';
+import { createHandle, HandlePositions } from '../components/BaseNode';
 import { FormField, Label, getThemeValue } from '../styled';
 import { extractVariableNames } from '../utils/variableParser';
+import { useStore } from '../store';
 
 // Constants for auto-resize functionality
 const MIN_WIDTH = 180;
@@ -58,9 +60,25 @@ const ResizableContainer = styled.div`
 
 // Text measurement utility function
 const measureText = (text, font, maxWidth) => {
+  // In testing environment, canvas context might not be available
+  // Provide fallback measurements
+  if (typeof document === 'undefined' || !document.createElement) {
+    return { width: MIN_WIDTH, height: MIN_HEIGHT, lineCount: 1 };
+  }
+
   // Create a temporary canvas element for text measurement
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
+  
+  // Handle case where canvas context is not available (e.g., in tests)
+  if (!context) {
+    // Fallback: estimate dimensions based on text length
+    const estimatedWidth = Math.min(Math.max(text.length * 8 + PADDING, MIN_WIDTH), MAX_WIDTH);
+    const estimatedLines = Math.ceil(text.length / 50); // Rough estimate
+    const estimatedHeight = Math.min(Math.max(estimatedLines * LINE_HEIGHT + PADDING, MIN_HEIGHT), MAX_HEIGHT);
+    return { width: estimatedWidth, height: estimatedHeight, lineCount: estimatedLines };
+  }
+  
   context.font = font;
   
   // Split text into lines based on maxWidth
@@ -103,10 +121,15 @@ const measureText = (text, font, maxWidth) => {
 
 // Text node content component with auto-resize functionality and variable detection
 const TextNodeContent = ({ id, data }) => {
-  const [currText, setCurrText] = useState(data?.text || '{{input}}');
+  // Handle empty string case - use default value
+  const initialText = (data?.text !== undefined && data.text !== '') ? data.text : '{{input}}';
+  const [currText, setCurrText] = useState(initialText);
   const [dimensions, setDimensions] = useState({ width: MIN_WIDTH, height: MIN_HEIGHT });
   const [detectedVariables, setDetectedVariables] = useState([]);
   const textareaRef = useRef(null);
+
+  // Import the store hook to update node data
+  const updateNodeField = useStore((state) => state.updateNodeField);
 
   // Function to update dimensions based on text content
   const updateDimensions = (text) => {
@@ -151,6 +174,9 @@ const TextNodeContent = ({ id, data }) => {
     setCurrText(newText);
     updateDimensions(newText);
     updateDetectedVariables(newText);
+    
+    // Update the node data in the store to trigger handle re-rendering
+    updateNodeField(id, 'text', newText);
   };
 
   // Update dimensions and variables when component mounts or text changes
@@ -158,6 +184,14 @@ const TextNodeContent = ({ id, data }) => {
     updateDimensions(currText);
     updateDetectedVariables(currText);
   }, [currText, updateDetectedVariables]);
+
+  // Sync local state with data prop changes (when node data is updated externally)
+  useEffect(() => {
+    const newText = (data?.text !== undefined && data.text !== '') ? data.text : '{{input}}';
+    if (newText !== currText) {
+      setCurrText(newText);
+    }
+  }, [data?.text, currText]);
 
   return (
     <ResizableContainer width={dimensions.width}>
@@ -185,12 +219,43 @@ const TextNodeContent = ({ id, data }) => {
   );
 };
 
-// Create TextNode using the factory with resizable configuration
+// Create TextNode using the factory with dynamic handle configuration
 export const TextNode = createNode(
   createNodeConfig({
     title: 'Text',
     content: TextNodeContent,
-    handles: ({ id }) => CommonHandles.singleSource(id),
+    handles: ({ id, data }) => {
+      // Get current text from data or default - handle empty string case
+      const currentText = (data?.text !== undefined && data.text !== '') ? data.text : '{{input}}';
+      
+      // Extract variables from current text
+      const variables = extractVariableNames(currentText);
+      
+      // Create dynamic target handles for each variable
+      const variableHandles = variables.map((variableName, index) => {
+        // Calculate position for each handle, evenly distributed on the left side
+        const topPercentage = variables.length === 1 
+          ? 50 // Center single handle
+          : (100 * (index + 1)) / (variables.length + 1); // Distribute multiple handles
+        
+        return createHandle(
+          `${id}-${variableName}`, 
+          'target', 
+          HandlePositions.LEFT,
+          { 
+            top: `${topPercentage}%`,
+            transform: 'translateY(-50%)' // Center the handle vertically
+          },
+          variableName // Use variable name as label
+        );
+      });
+      
+      // Always include the output handle on the right
+      const outputHandle = createHandle(`${id}-output`, 'source', HandlePositions.RIGHT);
+      
+      // Return all handles (variable handles + output handle)
+      return [...variableHandles, outputHandle];
+    },
     resizable: true // Enable resizable functionality
   })
 );

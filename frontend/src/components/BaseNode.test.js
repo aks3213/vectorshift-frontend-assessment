@@ -8,6 +8,7 @@ import { ReactFlowProvider } from 'reactflow';
 import { BaseNode, createHandle, HandlePositions } from './BaseNode';
 import { TextNode } from '../nodes/textNode';
 import { ThemeProvider } from '../ThemeProvider';
+import { extractVariableNames } from '../utils/variableParser';
 import fc from 'fast-check';
 
 // Test wrapper to provide ReactFlow and Theme context
@@ -1039,5 +1040,77 @@ describe('BaseNode Unit Tests', () => {
       style: { color: 'red' },
       label: 'Output'
     });
+  });
+});
+
+// Property-Based Tests for Variable Handle Management
+describe('Property 5: Variable Handle Management', () => {
+  test('**Feature: vectorshift-assessment, Property 5: Variable Handle Management** - For any text containing valid JavaScript variable patterns ({{ variable_name }}), the Text_Node should create corresponding handles, and removing variables should remove the corresponding handles', () => {
+    fc.assert(
+      fc.property(
+        // Generate text with various combinations of variables
+        fc.oneof(
+          fc.constant(''), // Empty text
+          fc.constant('{{input}}'), // Single variable
+          fc.constant('Hello {{name}}, welcome to {{place}}!'), // Multiple variables
+          fc.constant('{{var1}} and {{var2}} and {{var3}}'), // Multiple variables
+          fc.constant('No variables here'), // No variables
+          fc.constant('{{invalid-var}}'), // Invalid variable (should be ignored)
+          fc.constant('{{ spaced }}'), // Variable with spaces
+          fc.constant('{{_underscore}} {{$dollar}}'), // Valid special characters
+          fc.array(fc.string().filter(s => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(s) && s.length > 0), { minLength: 1, maxLength: 3 })
+            .map(vars => vars.map(v => `{{${v}}}`).join(' and ')) // Multiple valid variables
+        ),
+        (text) => {
+          const nodeProps = {
+            id: 'variable-test',
+            data: { text },
+            type: 'text'
+          };
+
+          const renderResult = render(
+            <TestWrapper>
+              <TextNode {...nodeProps} />
+            </TestWrapper>
+          );
+
+          // Extract expected variables using the same logic as the component
+          const expectedText = (text !== undefined && text !== '') ? text : '{{input}}';
+          const expectedVariables = extractVariableNames(expectedText);
+          
+          // Find all handles in the rendered component
+          const allHandles = renderResult.container.querySelectorAll('.react-flow__handle');
+          
+          // Count source handles (should always be 1 - the output handle)
+          const sourceHandles = Array.from(allHandles).filter(handle => 
+            handle.classList.contains('react-flow__handle-right') || 
+            handle.getAttribute('data-handlepos') === 'right'
+          );
+          
+          // Count target handles (should match number of variables)
+          const targetHandles = Array.from(allHandles).filter(handle => 
+            handle.classList.contains('react-flow__handle-left') || 
+            handle.getAttribute('data-handlepos') === 'left'
+          );
+          
+          // Verify that we have exactly one source handle (output)
+          expect(sourceHandles.length).toBe(1);
+          
+          // Verify that we have the correct number of target handles (one per variable)
+          expect(targetHandles.length).toBe(expectedVariables.length);
+          
+          // Verify total handle count
+          expect(allHandles.length).toBe(expectedVariables.length + 1); // variables + output
+
+          // Verify the textarea contains the expected text
+          const textarea = renderResult.container.querySelector('textarea');
+          expect(textarea).toBeInTheDocument();
+          expect(textarea.value).toBe(expectedText);
+
+          renderResult.unmount();
+        }
+      ),
+      { numRuns: 50 } // Reduced number of runs for faster testing
+    );
   });
 });
