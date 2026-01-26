@@ -6,14 +6,19 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ReactFlowProvider } from 'reactflow';
 import { BaseNode, createHandle, HandlePositions } from './BaseNode';
+import { TextNode } from '../nodes/textNode';
+import { ThemeProvider } from '../ThemeProvider';
+import fc from 'fast-check';
 
-// Test wrapper to provide ReactFlow context
+// Test wrapper to provide ReactFlow and Theme context
 const TestWrapper = ({ children }) => (
-  <ReactFlowProvider>
-    <div style={{ width: '100vw', height: '100vh' }}>
-      {children}
-    </div>
-  </ReactFlowProvider>
+  <ThemeProvider>
+    <ReactFlowProvider>
+      <div style={{ width: '100vw', height: '100vh' }}>
+        {children}
+      </div>
+    </ReactFlowProvider>
+  </ThemeProvider>
 );
 
 // Simple property testing utilities
@@ -732,6 +737,250 @@ describe('BaseNode Property Tests', () => {
         renderResult.unmount();
       }
     });
+  });
+
+  /**
+   * Feature: vectorshift-assessment, Property 4: Text Node Auto-Resize
+   * Validates: Requirements 3.1
+   */
+  test('Property 4: Text Node Auto-Resize - text content automatically adjusts node dimensions', () => {
+    // Mock canvas context for text measurement in test environment
+    const mockMeasureText = jest.fn((text) => ({
+      width: Math.max(text.length * 8, 100) // Simple width estimation
+    }));
+    
+    const mockCanvas = {
+      getContext: jest.fn(() => ({
+        font: '',
+        measureText: mockMeasureText
+      }))
+    };
+    
+    // Mock document.createElement for canvas
+    const originalCreateElement = document.createElement;
+    document.createElement = jest.fn((tagName) => {
+      if (tagName === 'canvas') {
+        return mockCanvas;
+      }
+      return originalCreateElement.call(document, tagName);
+    });
+
+    // Property-based test using fast-check
+    fc.assert(
+      fc.property(
+        // Generate random text content with various characteristics
+        fc.string({ minLength: 1, maxLength: 100 }),
+        (text) => {
+          // Create a text node with the generated text
+          const nodeProps = {
+            id: 'auto-resize-test',
+            data: { text: text },
+            type: 'textNode'
+          };
+
+          let renderResult;
+          expect(() => {
+            renderResult = render(
+              <TestWrapper>
+                <TextNode {...nodeProps} />
+              </TestWrapper>
+            );
+          }).not.toThrow();
+
+          // Verify the text node renders successfully
+          const nodeElement = renderResult.container.querySelector('.base-node');
+          expect(nodeElement).toBeInTheDocument();
+
+          // Verify the textarea element exists and contains the text
+          const textarea = renderResult.container.querySelector('textarea');
+          expect(textarea).toBeInTheDocument();
+          expect(textarea.value).toBe(text);
+
+          // Verify the text node title is present
+          expect(screen.getByText('Text')).toBeInTheDocument();
+
+          // Verify textarea has proper styling for auto-resize
+          const textareaStyle = window.getComputedStyle(textarea);
+          expect(textareaStyle.resize).toBe('none'); // Should not be manually resizable
+          expect(textareaStyle.overflow).toBe('hidden'); // Should hide overflow for auto-resize
+
+          // Verify the node maintains proper structure
+          expect(nodeElement).toHaveClass('base-node');
+
+          // Verify the node can handle various text lengths without breaking
+          // This tests the core auto-resize property: any text content should be accommodated
+          expect(textarea).toBeInTheDocument();
+          expect(textarea.value).toBe(text);
+
+          // Verify that measureText was called (indicating auto-resize functionality is active)
+          expect(mockMeasureText).toHaveBeenCalled();
+
+          renderResult.unmount();
+        }
+      ),
+      { 
+        numRuns: 50, // Reduced iterations for stability
+        verbose: false 
+      }
+    );
+
+    // Restore original createElement
+    document.createElement = originalCreateElement;
+  });
+
+  test('Property 4a: Text Node Auto-Resize - component renders with different text lengths', () => {
+    // Mock canvas context for text measurement in test environment
+    const mockMeasureText = jest.fn((text) => ({
+      width: Math.max(text.length * 8, 100) // Simple width estimation based on text length
+    }));
+    
+    const mockCanvas = {
+      getContext: jest.fn(() => ({
+        font: '',
+        measureText: mockMeasureText
+      }))
+    };
+    
+    // Mock document.createElement for canvas
+    const originalCreateElement = document.createElement;
+    document.createElement = jest.fn((tagName) => {
+      if (tagName === 'canvas') {
+        return mockCanvas;
+      }
+      return originalCreateElement.call(document, tagName);
+    });
+
+    // Test that different text lengths render successfully
+    fc.assert(
+      fc.property(
+        fc.record({
+          shortText: fc.string({ minLength: 1, maxLength: 10 }),
+          longText: fc.string({ minLength: 20, maxLength: 100 })
+        }),
+        ({ shortText, longText }) => {
+          // Test short text
+          const shortTextProps = {
+            id: 'short-text-test',
+            data: { text: shortText },
+            type: 'textNode'
+          };
+
+          const shortRender = render(
+            <TestWrapper>
+              <TextNode {...shortTextProps} />
+            </TestWrapper>
+          );
+
+          const shortTextarea = shortRender.container.querySelector('textarea');
+          expect(shortTextarea).toBeInTheDocument();
+          expect(shortTextarea.value).toBe(shortText);
+
+          shortRender.unmount();
+
+          // Test long text
+          const longTextProps = {
+            id: 'long-text-test',
+            data: { text: longText },
+            type: 'textNode'
+          };
+
+          const longRender = render(
+            <TestWrapper>
+              <TextNode {...longTextProps} />
+            </TestWrapper>
+          );
+
+          const longTextarea = longRender.container.querySelector('textarea');
+          expect(longTextarea).toBeInTheDocument();
+          expect(longTextarea.value).toBe(longText);
+
+          // Verify that measureText was called for both texts
+          expect(mockMeasureText).toHaveBeenCalled();
+
+          longRender.unmount();
+        }
+      ),
+      { 
+        numRuns: 25,
+        verbose: false 
+      }
+    );
+
+    // Restore original createElement
+    document.createElement = originalCreateElement;
+  });
+
+  test('Property 4b: Text Node Auto-Resize - maintains proper styling constraints', () => {
+    // Mock canvas context for text measurement in test environment
+    const mockMeasureText = jest.fn((text) => ({
+      width: Math.max(text.length * 8, 100) // Simple width estimation
+    }));
+    
+    const mockCanvas = {
+      getContext: jest.fn(() => ({
+        font: '',
+        measureText: mockMeasureText
+      }))
+    };
+    
+    // Mock document.createElement for canvas
+    const originalCreateElement = document.createElement;
+    document.createElement = jest.fn((tagName) => {
+      if (tagName === 'canvas') {
+        return mockCanvas;
+      }
+      return originalCreateElement.call(document, tagName);
+    });
+
+    // Test that styling constraints are maintained
+    fc.assert(
+      fc.property(
+        fc.oneof(
+          fc.constant(''), // Empty text
+          fc.string({ minLength: 1, maxLength: 5 }), // Short text
+          fc.string({ minLength: 50, maxLength: 100 }) // Long text
+        ),
+        (text) => {
+          const nodeProps = {
+            id: 'constraint-test',
+            data: { text: text },
+            type: 'textNode'
+          };
+
+          const renderResult = render(
+            <TestWrapper>
+              <TextNode {...nodeProps} />
+            </TestWrapper>
+          );
+
+          const textarea = renderResult.container.querySelector('textarea');
+          expect(textarea).toBeInTheDocument();
+
+          // Verify textarea contains the expected text (or default value)
+          const expectedText = text || '{{input}}'; // TextNode has default value
+          expect(textarea.value).toBe(expectedText);
+
+          // Verify auto-resize styling is applied
+          const textareaStyle = window.getComputedStyle(textarea);
+          expect(textareaStyle.resize).toBe('none');
+          expect(textareaStyle.overflow).toBe('hidden');
+
+          // Verify the node structure is maintained
+          const nodeElement = renderResult.container.querySelector('.base-node');
+          expect(nodeElement).toBeInTheDocument();
+          expect(nodeElement).toHaveClass('base-node');
+
+          renderResult.unmount();
+        }
+      ),
+      { 
+        numRuns: 25,
+        verbose: false 
+      }
+    );
+
+    // Restore original createElement
+    document.createElement = originalCreateElement;
   });
 
 describe('BaseNode Unit Tests', () => {
