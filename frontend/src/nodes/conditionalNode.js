@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { createNode, createNodeConfig } from '../components/nodeFactory';
 import { createHandle, HandlePositions } from '../components/BaseNode';
+import { FormField, Label, Input, Select } from '../styled';
 
 // Conditional node content component
 const ConditionalNodeContent = ({ id, data }) => {
@@ -20,28 +21,27 @@ const ConditionalNodeContent = ({ id, data }) => {
 
   return (
     <div>
-      <label>
-        Condition:
-        <select value={condition} onChange={handleConditionChange} style={{ width: '100%', marginBottom: '4px' }}>
+      <FormField>
+        <Label>Condition:</Label>
+        <Select value={condition} onChange={handleConditionChange}>
           <option value="equals">Equals</option>
           <option value="notEquals">Not Equals</option>
           <option value="greaterThan">Greater Than</option>
           <option value="lessThan">Less Than</option>
           <option value="isEmpty">Is Empty</option>
           <option value="isNotEmpty">Is Not Empty</option>
-        </select>
-      </label>
+        </Select>
+      </FormField>
       {!['isEmpty', 'isNotEmpty'].includes(condition) && (
-        <label>
-          Value:
-          <input 
+        <FormField>
+          <Label>Value:</Label>
+          <Input 
             type="text" 
             value={value} 
             onChange={handleValueChange} 
             placeholder="Comparison value..."
-            style={{ width: '100%' }}
           />
-        </label>
+        </FormField>
       )}
     </div>
   );
@@ -63,7 +63,6 @@ export const ConditionalNode = createNode(
     style: {
       backgroundColor: '#fff3e0',
       border: '2px solid #f57c00',
-      borderRadius: '8px',
       width: 220,
       height: 110
     }

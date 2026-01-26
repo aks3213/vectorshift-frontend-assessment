@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { createNode, createNodeConfig } from '../components/nodeFactory';
 import { createHandle, HandlePositions } from '../components/BaseNode';
+import { FormField, Label, Input, Select } from '../styled';
 
 // Aggregator node content component
 const AggregatorNodeContent = ({ id, data }) => {
@@ -20,26 +21,25 @@ const AggregatorNodeContent = ({ id, data }) => {
 
   return (
     <div>
-      <label>
-        Operation:
-        <select value={aggregationType} onChange={handleTypeChange} style={{ width: '100%', marginBottom: '4px' }}>
+      <FormField>
+        <Label>Operation:</Label>
+        <Select value={aggregationType} onChange={handleTypeChange}>
           <option value="concat">Concatenate</option>
           <option value="merge">Merge</option>
           <option value="join">Join Array</option>
           <option value="sum">Sum</option>
           <option value="average">Average</option>
-        </select>
-      </label>
+        </Select>
+      </FormField>
       {(aggregationType === 'concat' || aggregationType === 'join') && (
-        <label>
-          Separator:
-          <input 
+        <FormField>
+          <Label>Separator:</Label>
+          <Input 
             type="text" 
             value={separator} 
             onChange={handleSeparatorChange} 
-            style={{ width: '100%' }}
           />
-        </label>
+        </FormField>
       )}
     </div>
   );
@@ -62,7 +62,6 @@ export const AggregatorNode = createNode(
     style: {
       backgroundColor: '#e8f5e8',
       border: '2px solid #388e3c',
-      borderRadius: '8px',
       width: 220,
       height: 120
     }

@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { createNode, createNodeConfig, CommonHandles } from '../components/nodeFactory';
+import { FormField, Label, Input, Select } from '../styled';
 
 // Transform node content component
 const TransformNodeContent = ({ id, data }) => {
@@ -19,27 +20,26 @@ const TransformNodeContent = ({ id, data }) => {
 
   return (
     <div>
-      <label>
-        Transform:
-        <select value={transformType} onChange={handleTypeChange} style={{ width: '100%', marginBottom: '4px' }}>
+      <FormField>
+        <Label>Transform:</Label>
+        <Select value={transformType} onChange={handleTypeChange}>
           <option value="uppercase">Uppercase</option>
           <option value="lowercase">Lowercase</option>
           <option value="trim">Trim</option>
           <option value="reverse">Reverse</option>
           <option value="custom">Custom</option>
-        </select>
-      </label>
+        </Select>
+      </FormField>
       {transformType === 'custom' && (
-        <label>
-          Function:
-          <input 
+        <FormField>
+          <Label>Function:</Label>
+          <Input 
             type="text" 
             value={customFunction} 
             onChange={handleFunctionChange} 
             placeholder="x => x.replace(...)"
-            style={{ width: '100%' }}
           />
-        </label>
+        </FormField>
       )}
     </div>
   );
@@ -54,7 +54,6 @@ export const TransformNode = createNode(
     style: {
       backgroundColor: '#f3e5f5',
       border: '2px solid #7b1fa2',
-      borderRadius: '8px',
       width: 220,
       height: 100
     }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createNode, createNodeConfig, CommonHandles } from '../components/nodeFactory';
+import { FormField, Label, Input, Select } from '../styled';
 
 // Output node content component
 const OutputNodeContent = ({ id, data }) => {
@@ -18,22 +19,21 @@ const OutputNodeContent = ({ id, data }) => {
 
   return (
     <div>
-      <label>
-        Name:
-        <input 
+      <FormField>
+        <Label>Name:</Label>
+        <Input 
           type="text" 
           value={currName} 
           onChange={handleNameChange} 
-          style={{ width: '100%', marginBottom: '4px' }}
         />
-      </label>
-      <label>
-        Type:
-        <select value={outputType} onChange={handleTypeChange} style={{ width: '100%' }}>
+      </FormField>
+      <FormField>
+        <Label>Type:</Label>
+        <Select value={outputType} onChange={handleTypeChange}>
           <option value="Text">Text</option>
           <option value="File">Image</option>
-        </select>
-      </label>
+        </Select>
+      </FormField>
     </div>
   );
 };

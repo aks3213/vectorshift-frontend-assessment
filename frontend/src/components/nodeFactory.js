@@ -41,15 +41,7 @@ export const createNodeConfig = ({
   title,
   content,
   handles,
-  style: {
-    width: 200,
-    height: 80,
-    border: '1px solid black',
-    backgroundColor: 'white',
-    borderRadius: '4px',
-    padding: '8px',
-    ...style
-  },
+  style, // Custom styles will be applied to the styled component
   resizable,
   validation
 });

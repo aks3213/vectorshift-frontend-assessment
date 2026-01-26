@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createNode, createNodeConfig, CommonHandles } from '../components/nodeFactory';
+import { FormField, Label, Input } from '../styled';
 
 // Text node content component
 const TextNodeContent = ({ id, data }) => {
@@ -13,15 +14,14 @@ const TextNodeContent = ({ id, data }) => {
 
   return (
     <div>
-      <label>
-        Text:
-        <input 
+      <FormField>
+        <Label>Text:</Label>
+        <Input 
           type="text" 
           value={currText} 
           onChange={handleTextChange} 
-          style={{ width: '100%' }}
         />
-      </label>
+      </FormField>
     </div>
   );
 };

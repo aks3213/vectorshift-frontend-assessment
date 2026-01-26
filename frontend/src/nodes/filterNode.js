@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { createNode, createNodeConfig, CommonHandles } from '../components/nodeFactory';
+import { FormField, Label, Input, Select } from '../styled';
 
 // Filter node content component
 const FilterNodeContent = ({ id, data }) => {
@@ -19,26 +20,25 @@ const FilterNodeContent = ({ id, data }) => {
 
   return (
     <div>
-      <label>
-        Filter Type:
-        <select value={filterType} onChange={handleTypeChange} style={{ width: '100%', marginBottom: '4px' }}>
+      <FormField>
+        <Label>Filter Type:</Label>
+        <Select value={filterType} onChange={handleTypeChange}>
           <option value="contains">Contains</option>
           <option value="equals">Equals</option>
           <option value="startsWith">Starts With</option>
           <option value="endsWith">Ends With</option>
           <option value="regex">Regex</option>
-        </select>
-      </label>
-      <label>
-        Value:
-        <input 
+        </Select>
+      </FormField>
+      <FormField>
+        <Label>Value:</Label>
+        <Input 
           type="text" 
           value={filterValue} 
           onChange={handleValueChange} 
           placeholder="Filter value..."
-          style={{ width: '100%' }}
         />
-      </label>
+      </FormField>
     </div>
   );
 };
@@ -52,7 +52,6 @@ export const FilterNode = createNode(
     style: {
       backgroundColor: '#e3f2fd',
       border: '2px solid #1976d2',
-      borderRadius: '8px',
       width: 220,
       height: 100
     }

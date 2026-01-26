@@ -4,6 +4,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import ReactFlow, { Controls, Background, MiniMap } from 'reactflow';
+import styled from '@emotion/styled';
 import { useStore } from './store';
 import { shallow } from 'zustand/shallow';
 import { InputNode } from './nodes/inputNode';
@@ -15,8 +16,77 @@ import { TransformNode } from './nodes/transformNode';
 import { AggregatorNode } from './nodes/aggregatorNode';
 import { ConditionalNode } from './nodes/conditionalNode';
 import { DelayNode } from './nodes/delayNode';
+import { getThemeValue } from './styled';
 
 import 'reactflow/dist/style.css';
+
+const PipelineContainer = styled.div`
+  width: 100%;
+  height: 70vh;
+  background-color: ${getThemeValue('colors.background')};
+  border: 1px solid ${getThemeValue('colors.border')};
+  border-radius: ${getThemeValue('borderRadius.lg')};
+  overflow: hidden;
+  box-shadow: ${getThemeValue('shadows.md')};
+  position: relative;
+
+  .react-flow__controls {
+    background-color: ${getThemeValue('colors.surface')};
+    border: 1px solid ${getThemeValue('colors.border')};
+    border-radius: ${getThemeValue('borderRadius.md')};
+    box-shadow: ${getThemeValue('shadows.sm')};
+  }
+
+  .react-flow__controls-button {
+    background-color: ${getThemeValue('colors.surface')};
+    border-bottom: 1px solid ${getThemeValue('colors.border')};
+    color: ${getThemeValue('colors.text.primary')};
+    transition: all ${getThemeValue('transitions.fast')};
+
+    &:hover {
+      background-color: ${getThemeValue('colors.background')};
+      color: ${getThemeValue('colors.secondary')};
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .react-flow__minimap {
+    background-color: ${getThemeValue('colors.surface')};
+    border: 1px solid ${getThemeValue('colors.border')};
+    border-radius: ${getThemeValue('borderRadius.md')};
+    box-shadow: ${getThemeValue('shadows.sm')};
+  }
+
+  .react-flow__background {
+    background-color: ${getThemeValue('colors.background')};
+  }
+
+  .react-flow__edge-path {
+    stroke: ${getThemeValue('colors.secondary')};
+    stroke-width: 2;
+  }
+
+  .react-flow__connection-line {
+    stroke: ${getThemeValue('colors.secondary')};
+    stroke-width: 2;
+  }
+
+  .react-flow__handle {
+    background-color: ${getThemeValue('colors.secondary')};
+    border: 2px solid ${getThemeValue('colors.surface')};
+    width: 10px;
+    height: 10px;
+    transition: all ${getThemeValue('transitions.fast')};
+
+    &:hover {
+      background-color: ${getThemeValue('colors.primary')};
+      transform: scale(1.2);
+    }
+  }
+`;
 
 const gridSize = 20;
 const proOptions = { hideAttribution: true };
@@ -99,8 +169,7 @@ export const PipelineUI = () => {
     }, []);
 
     return (
-        <>
-        <div ref={reactFlowWrapper} style={{width: '100wv', height: '70vh'}}>
+        <PipelineContainer ref={reactFlowWrapper}>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -115,11 +184,25 @@ export const PipelineUI = () => {
                 snapGrid={[gridSize, gridSize]}
                 connectionLineType='smoothstep'
             >
-                <Background color="#aaa" gap={gridSize} />
+                <Background 
+                  color="#cbd5e1" 
+                  gap={gridSize} 
+                  size={1}
+                />
                 <Controls />
-                <MiniMap />
+                <MiniMap 
+                  nodeColor={(node) => {
+                    switch (node.type) {
+                      case 'customInput': return '#10B981';
+                      case 'customOutput': return '#EF4444';
+                      case 'llm': return '#6366F1';
+                      case 'text': return '#F59E0B';
+                      default: return '#64748B';
+                    }
+                  }}
+                  maskColor="rgba(248, 250, 252, 0.8)"
+                />
             </ReactFlow>
-        </div>
-        </>
+        </PipelineContainer>
     )
 }

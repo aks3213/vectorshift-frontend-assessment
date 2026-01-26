@@ -1,12 +1,13 @@
 // llmNode.js
 
 import { createNode, createNodeConfig, CommonHandles } from '../components/nodeFactory';
+import { NodeText } from '../styled';
 
 // LLM node content component
 const LLMNodeContent = ({ id, data }) => {
   return (
     <div>
-      <span>This is a LLM.</span>
+      <NodeText>This is a LLM.</NodeText>
     </div>
   );
 };

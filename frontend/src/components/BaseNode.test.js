@@ -403,9 +403,8 @@ describe('BaseNode Property Tests', () => {
       expect(nodeElement).toBeInTheDocument();
 
       // Verify node has proper structure for ReactFlow dragging
-      const nodeHeader = renderResult.container.querySelector('.node-header');
-      expect(nodeHeader).toBeInTheDocument();
-      expect(nodeHeader).toHaveTextContent(config.title);
+      // With styled components, we need to check for the title text instead of class
+      expect(screen.getByText(config.title)).toBeInTheDocument();
 
       // Node should maintain its structure regardless of ReactFlow state props
       expect(nodeElement).toBeInTheDocument();
@@ -413,6 +412,326 @@ describe('BaseNode Property Tests', () => {
 
       renderResult.unmount();
     }
+  });
+
+  /**
+   * Feature: vectorshift-assessment, Property 3: Responsive Design Consistency
+   * Validates: Requirements 2.4
+   */
+  test('Property 3: Responsive Design Consistency - components render without layout breaks across viewport sizes', () => {
+    // Test viewport sizes from 320px to 1920px width
+    const viewportSizes = [
+      { width: 320, height: 568 },   // Mobile portrait
+      { width: 375, height: 667 },   // iPhone SE
+      { width: 414, height: 896 },   // iPhone XR
+      { width: 768, height: 1024 },  // iPad portrait
+      { width: 1024, height: 768 },  // iPad landscape
+      { width: 1280, height: 720 },  // Desktop small
+      { width: 1440, height: 900 },  // Desktop medium
+      { width: 1920, height: 1080 }  // Desktop large
+    ];
+
+    // Run property test across different viewport sizes
+    viewportSizes.forEach(viewport => {
+      for (let i = 0; i < 20; i++) {
+        // Generate random node configuration with reasonable constraints
+        const config = {
+          title: generateRandomString(5, 20), // Reasonable title length
+          content: Math.random() > 0.5 ? <div>Test Content</div> : null,
+          handles: Array.from({ length: Math.floor(Math.random() * 4) }, (_, idx) => ({
+            id: `handle-${idx}`,
+            type: Math.random() > 0.5 ? 'source' : 'target',
+            position: [HandlePositions.LEFT, HandlePositions.RIGHT, HandlePositions.TOP, HandlePositions.BOTTOM][Math.floor(Math.random() * 4)]
+          })),
+          style: {
+            // Ensure node width doesn't exceed viewport constraints
+            width: Math.min(Math.floor(Math.random() * 200) + 100, viewport.width - 40),
+            height: Math.floor(Math.random() * 100) + 60,
+            backgroundColor: generateRandomColor(),
+            border: `1px solid ${generateRandomColor()}`,
+            borderRadius: '8px',
+            padding: '8px'
+          }
+        };
+        
+        // Create test wrapper with specific viewport size
+        const ViewportTestWrapper = ({ children }) => (
+          <div 
+            style={{ 
+              width: `${viewport.width}px`, 
+              height: `${viewport.height}px`, 
+              overflow: 'hidden',
+              position: 'relative'
+            }}
+            data-testid={`viewport-${viewport.width}x${viewport.height}`}
+          >
+            <ReactFlowProvider>
+              <div style={{ width: '100%', height: '100%' }}>
+                {children}
+              </div>
+            </ReactFlowProvider>
+          </div>
+        );
+
+        const nodeProps = {
+          id: `responsive-test-${viewport.width}-${i}`,
+          data: { label: `Responsive Test ${viewport.width}x${viewport.height}` },
+          config: config
+        };
+
+        let renderResult;
+        expect(() => {
+          renderResult = render(
+            <ViewportTestWrapper>
+              <BaseNode {...nodeProps} />
+            </ViewportTestWrapper>
+          );
+        }).not.toThrow();
+
+        const nodeElement = renderResult.container.querySelector('.base-node');
+        expect(nodeElement).toBeInTheDocument();
+
+        // Verify viewport wrapper is properly sized
+        const viewportElement = renderResult.container.querySelector(`[data-testid="viewport-${viewport.width}x${viewport.height}"]`);
+        expect(viewportElement).toBeInTheDocument();
+        expect(viewportElement).toHaveStyle({
+          width: `${viewport.width}px`,
+          height: `${viewport.height}px`
+        });
+
+        // Verify node has proper styling applied (since getBoundingClientRect doesn't work in JSDOM)
+        if (config.style) {
+          expect(nodeElement).toHaveStyle({
+            width: `${config.style.width}px`,
+            height: `${config.style.height}px`,
+            backgroundColor: config.style.backgroundColor,
+            border: config.style.border,
+            borderRadius: config.style.borderRadius,
+            padding: config.style.padding
+          });
+        }
+
+        // Verify title is rendered and accessible
+        expect(screen.getByText(config.title)).toBeInTheDocument();
+
+        // Verify handles are rendered correctly
+        const handles = renderResult.container.querySelectorAll('.react-flow__handle');
+        expect(handles).toHaveLength(config.handles.length);
+
+        // Verify each handle has correct ReactFlow classes and attributes
+        config.handles.forEach((handleConfig, index) => {
+          const handle = handles[index];
+          expect(handle).toHaveClass('react-flow__handle');
+          expect(handle).toHaveClass(`react-flow__handle-${handleConfig.position}`);
+          expect(handle).toHaveClass(handleConfig.type);
+          expect(handle).toHaveAttribute('data-handleid', handleConfig.id);
+        });
+
+        // Verify node structure is responsive-friendly
+        // Check that the node has proper CSS structure for responsive design
+        const computedStyle = window.getComputedStyle(nodeElement);
+        expect(['visible', 'hidden', 'auto', 'scroll']).toContain(computedStyle.overflow);
+
+        renderResult.unmount();
+      }
+    });
+  });
+
+  test('Property 3a: Text content adapts to viewport constraints', () => {
+    const viewportSizes = [
+      { width: 320, height: 568 },
+      { width: 768, height: 1024 },
+      { width: 1920, height: 1080 }
+    ];
+
+    viewportSizes.forEach(viewport => {
+      for (let i = 0; i < 15; i++) {
+        // Generate text content of varying lengths
+        const shortText = generateRandomString(5, 15);
+        const mediumText = generateRandomString(20, 50);
+        const longText = generateRandomString(60, 120);
+        const textOptions = [shortText, mediumText, longText];
+        const selectedText = textOptions[Math.floor(Math.random() * textOptions.length)];
+
+        const config = {
+          title: `Title-${i}-${viewport.width}`, // Unique title to avoid conflicts
+          content: <div data-testid={`content-${i}-${viewport.width}`} style={{ padding: '8px', wordWrap: 'break-word' }}>{selectedText}</div>,
+          handles: [],
+          style: {
+            maxWidth: viewport.width - 40, // Ensure it fits within viewport
+            width: 'auto',
+            minWidth: 100,
+            padding: '8px',
+            boxSizing: 'border-box'
+          }
+        };
+
+        const ViewportTestWrapper = ({ children }) => (
+          <div 
+            style={{ 
+              width: `${viewport.width}px`, 
+              height: `${viewport.height}px`,
+              overflow: 'hidden'
+            }}
+            data-testid={`text-viewport-${viewport.width}x${viewport.height}-${i}`}
+          >
+            <ReactFlowProvider>
+              <div style={{ width: '100%', height: '100%' }}>
+                {children}
+              </div>
+            </ReactFlowProvider>
+          </div>
+        );
+
+        const renderResult = render(
+          <ViewportTestWrapper>
+            <BaseNode id={`text-responsive-${viewport.width}-${i}`} data={{}} config={config} />
+          </ViewportTestWrapper>
+        );
+
+        const nodeElement = renderResult.container.querySelector('.base-node');
+        expect(nodeElement).toBeInTheDocument();
+
+        // Verify viewport wrapper is properly sized
+        const viewportElement = renderResult.container.querySelector(`[data-testid="text-viewport-${viewport.width}x${viewport.height}-${i}"]`);
+        expect(viewportElement).toHaveStyle({
+          width: `${viewport.width}px`,
+          height: `${viewport.height}px`
+        });
+
+        // Verify node has responsive styling applied
+        expect(nodeElement).toHaveStyle({
+          maxWidth: `${viewport.width - 40}px`,
+          boxSizing: 'border-box'
+        });
+
+        // Verify title is rendered and accessible
+        expect(screen.getByText(config.title)).toBeInTheDocument();
+
+        // Verify content is rendered with proper text wrapping
+        const contentElement = renderResult.container.querySelector(`[data-testid="content-${i}-${viewport.width}"]`);
+        expect(contentElement).toBeInTheDocument();
+        expect(contentElement).toHaveStyle({
+          wordWrap: 'break-word',
+          padding: '8px'
+        });
+        expect(contentElement).toHaveTextContent(selectedText);
+
+        renderResult.unmount();
+      }
+    });
+  });
+
+  test('Property 3b: Handle positioning remains consistent across viewports', () => {
+    const viewportSizes = [
+      { width: 320, height: 568 },
+      { width: 1024, height: 768 },
+      { width: 1920, height: 1080 }
+    ];
+
+    viewportSizes.forEach(viewport => {
+      for (let i = 0; i < 10; i++) {
+        // Create node with multiple handles in different positions
+        const handles = [
+          { id: `left-1-${i}`, type: 'target', position: HandlePositions.LEFT },
+          { id: `left-2-${i}`, type: 'target', position: HandlePositions.LEFT },
+          { id: `right-1-${i}`, type: 'source', position: HandlePositions.RIGHT },
+          { id: `right-2-${i}`, type: 'source', position: HandlePositions.RIGHT },
+          { id: `top-1-${i}`, type: 'target', position: HandlePositions.TOP },
+          { id: `bottom-1-${i}`, type: 'source', position: HandlePositions.BOTTOM }
+        ];
+
+        const config = {
+          title: `Handle Test Node ${i}`,
+          handles: handles,
+          style: {
+            width: Math.min(200, viewport.width - 60), // Ensure node fits in viewport
+            height: 120,
+            padding: '16px',
+            boxSizing: 'border-box'
+          }
+        };
+
+        const ViewportTestWrapper = ({ children }) => (
+          <div 
+            style={{ 
+              width: `${viewport.width}px`, 
+              height: `${viewport.height}px`,
+              overflow: 'hidden'
+            }}
+            data-testid={`handle-viewport-${viewport.width}x${viewport.height}-${i}`}
+          >
+            <ReactFlowProvider>
+              <div style={{ width: '100%', height: '100%' }}>
+                {children}
+              </div>
+            </ReactFlowProvider>
+          </div>
+        );
+
+        const renderResult = render(
+          <ViewportTestWrapper>
+            <BaseNode id={`handle-responsive-${viewport.width}-${i}`} data={{}} config={config} />
+          </ViewportTestWrapper>
+        );
+
+        const nodeElement = renderResult.container.querySelector('.base-node');
+        const renderedHandles = renderResult.container.querySelectorAll('.react-flow__handle');
+        
+        expect(renderedHandles).toHaveLength(handles.length);
+
+        // Verify viewport wrapper is properly sized
+        const viewportElement = renderResult.container.querySelector(`[data-testid="handle-viewport-${viewport.width}x${viewport.height}-${i}"]`);
+        expect(viewportElement).toHaveStyle({
+          width: `${viewport.width}px`,
+          height: `${viewport.height}px`
+        });
+
+        // Verify node has proper responsive styling
+        expect(nodeElement).toHaveStyle({
+          width: `${Math.min(200, viewport.width - 60)}px`,
+          height: '120px',
+          boxSizing: 'border-box'
+        });
+
+        // Verify each handle has correct ReactFlow attributes and classes
+        renderedHandles.forEach((handle, index) => {
+          const handleConfig = handles[index];
+
+          // Verify handle has required ReactFlow classes
+          expect(handle).toHaveClass('react-flow__handle');
+          expect(handle).toHaveClass(`react-flow__handle-${handleConfig.position}`);
+          expect(handle).toHaveClass(handleConfig.type);
+          
+          // Verify handle has proper data attributes for ReactFlow
+          expect(handle).toHaveAttribute('data-handleid', handleConfig.id);
+          
+          // Verify handle position is valid ReactFlow position
+          const validPositions = ['left', 'right', 'top', 'bottom'];
+          expect(validPositions).toContain(handleConfig.position);
+          
+          // Verify handle type is valid ReactFlow type
+          const validTypes = ['source', 'target'];
+          expect(validTypes).toContain(handleConfig.type);
+
+          // Verify handle has proper CSS positioning classes
+          expect(handle).toHaveClass(`react-flow__handle-${handleConfig.position}`);
+        });
+
+        // Verify handles maintain consistent structure across viewports
+        const leftHandles = renderResult.container.querySelectorAll('.react-flow__handle-left');
+        const rightHandles = renderResult.container.querySelectorAll('.react-flow__handle-right');
+        const topHandles = renderResult.container.querySelectorAll('.react-flow__handle-top');
+        const bottomHandles = renderResult.container.querySelectorAll('.react-flow__handle-bottom');
+
+        expect(leftHandles).toHaveLength(2);
+        expect(rightHandles).toHaveLength(2);
+        expect(topHandles).toHaveLength(1);
+        expect(bottomHandles).toHaveLength(1);
+
+        renderResult.unmount();
+      }
+    });
   });
 
 describe('BaseNode Unit Tests', () => {
