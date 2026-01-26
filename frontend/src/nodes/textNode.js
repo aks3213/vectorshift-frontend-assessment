@@ -143,8 +143,18 @@ const TextNodeContent = ({ id, data }) => {
     // Measure text dimensions
     const { width, height } = measureText(text, font, maxContentWidth);
     
-    // Update dimensions with smooth transition
-    setDimensions({ width, height });
+    // Also consider the width needed for "Variables detected" text
+    const variables = extractVariableNames(text);
+    if (variables.length > 0) {
+      const variableText = `Variables detected: ${variables.join(', ')}`;
+      const variableWidth = measureText(variableText, '12px Arial', maxContentWidth).width;
+      
+      // Use the larger of the two widths
+      const finalWidth = Math.max(width, variableWidth);
+      setDimensions({ width: finalWidth, height });
+    } else {
+      setDimensions({ width, height });
+    }
     
     // Also update textarea height directly for immediate feedback
     if (textareaRef.current) {
@@ -209,7 +219,11 @@ const TextNodeContent = ({ id, data }) => {
             marginTop: '8px', 
             fontSize: '12px', 
             color: '#64748B',
-            fontStyle: 'italic'
+            fontStyle: 'italic',
+            wordBreak: 'break-word', // Prevent text truncation
+            whiteSpace: 'normal', // Allow text wrapping
+            maxWidth: '100%', // Ensure full width is available
+            overflow: 'visible' // Prevent any overflow hiding
           }}>
             Variables detected: {detectedVariables.join(', ')}
           </div>

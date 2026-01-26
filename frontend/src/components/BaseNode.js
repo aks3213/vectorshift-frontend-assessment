@@ -134,14 +134,53 @@ const StyledHandle = styled(Handle, {
 `;
 
 const HandleLabel = styled.span`
+  position: absolute;
   font-size: ${getThemeValue('typography.fontSize.xs')};
   color: ${getThemeValue('colors.text.secondary')};
-  margin-left: ${getThemeValue('spacing.xs')};
   font-weight: ${getThemeValue('typography.fontWeight.medium')};
   background: rgba(255, 255, 255, 0.9);
   padding: 2px 6px;
   border-radius: ${getThemeValue('borderRadius.sm')};
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+  
+  /* Position based on handle position */
+  ${props => {
+    switch (props.position) {
+      case 'left':
+        return `
+          right: 20px;
+          top: 50%;
+          transform: translateY(-50%);
+        `;
+      case 'right':
+        return `
+          left: 20px;
+          top: 50%;
+          transform: translateY(-50%);
+        `;
+      case 'top':
+        return `
+          bottom: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+        `;
+      case 'bottom':
+        return `
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+        `;
+      default:
+        return `
+          left: 20px;
+          top: 50%;
+          transform: translateY(-50%);
+        `;
+    }
+  }}
 `;
 
 /**
@@ -208,11 +247,15 @@ export const BaseNode = ({ id, data, config, selected, ...props }) => {
           id={handleId || `${id}-${type}-${index}`}
           type={type}
           position={position}
-          style={handleStyle}
+          style={{ ...handleStyle, position: 'relative' }}
           nodeType={nodeType}
           {...handleProps}
         >
-          {label && <HandleLabel>{label}</HandleLabel>}
+          {label && (
+            <HandleLabel position={position}>
+              {label}
+            </HandleLabel>
+          )}
         </StyledHandle>
       );
     });
