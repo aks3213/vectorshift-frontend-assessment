@@ -40,7 +40,7 @@ const getNodeTypeColorLight = (nodeType) => {
 
 // Styled components for BaseNode
 const NodeContainer = styled('div', {
-  shouldForwardProp: (prop) => prop !== 'nodeType'
+  shouldForwardProp: (prop) => prop !== 'nodeType' && prop !== 'resizable'
 })`
   background: linear-gradient(135deg, ${props => getNodeTypeColorLight(props.nodeType)} 0%, ${getThemeValue('colors.surface')} 100%);
   border: 2px solid ${props => getNodeTypeColor(props.nodeType)};
@@ -50,11 +50,13 @@ const NodeContainer = styled('div', {
   font-family: ${getThemeValue('typography.fontFamily.primary')};
   transition: all ${getThemeValue('transitions.normal')};
   position: relative;
-  min-width: 220px;
-  max-width: 320px;
+  min-width: ${props => props.resizable ? '180px' : '220px'};
+  max-width: ${props => props.resizable ? '400px' : '320px'};
   min-height: 100px;
   overflow: visible;
   word-wrap: break-word;
+  width: ${props => props.resizable ? 'auto' : 'initial'};
+  height: ${props => props.resizable ? 'auto' : 'initial'};
 
   &:hover {
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
@@ -221,6 +223,7 @@ export const BaseNode = ({ id, data, config, selected, ...props }) => {
       style={nodeConfig.style} 
       className={`base-node ${selected ? 'selected' : ''}`}
       nodeType={nodeType}
+      resizable={nodeConfig.resizable}
     >
       {renderHandles()}
       
