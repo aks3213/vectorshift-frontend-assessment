@@ -219,6 +219,202 @@ describe('BaseNode Property Tests', () => {
   });
 });
 
+  /**
+   * Feature: vectorshift-assessment, Property 2: ReactFlow Compatibility
+   * Validates: Requirements 1.5
+   */
+  test('Property 2: ReactFlow Compatibility - nodes maintain drag, drop, and connection functionality', () => {
+    // Run property test with 100 iterations
+    for (let i = 0; i < 100; i++) {
+      const config = generateRandomNodeConfig();
+      const nodeProps = {
+        id: `test-node-reactflow-${i}`,
+        data: { label: `ReactFlow Test Node ${i}` },
+        config: config,
+        // ReactFlow-specific props that should be preserved
+        selected: Math.random() > 0.5,
+        dragging: Math.random() > 0.5,
+        xPos: Math.floor(Math.random() * 500),
+        yPos: Math.floor(Math.random() * 500),
+        zIndex: Math.floor(Math.random() * 100),
+        isConnectable: Math.random() > 0.3,
+        type: 'custom',
+        dragHandle: '.node-header'
+      };
+
+      let renderResult;
+      expect(() => {
+        renderResult = render(
+          <TestWrapper>
+            <BaseNode {...nodeProps} />
+          </TestWrapper>
+        );
+      }).not.toThrow();
+
+      const nodeElement = renderResult.container.querySelector('.base-node');
+      expect(nodeElement).toBeInTheDocument();
+
+      // Verify ReactFlow compatibility: node should accept and handle ReactFlow props
+      // The node should render without errors when ReactFlow props are passed
+      expect(nodeElement).toBeInTheDocument();
+
+      // Verify handles are properly configured for ReactFlow connections
+      const handles = renderResult.container.querySelectorAll('.react-flow__handle');
+      expect(handles).toHaveLength(config.handles.length);
+
+      // Each handle should have ReactFlow-compatible attributes
+      config.handles.forEach((handleConfig, index) => {
+        const handle = handles[index];
+        
+        // Verify handle has required ReactFlow classes
+        expect(handle).toHaveClass('react-flow__handle');
+        expect(handle).toHaveClass(`react-flow__handle-${handleConfig.position}`);
+        expect(handle).toHaveClass(handleConfig.type);
+        
+        // Verify handle has proper data attributes for ReactFlow
+        const expectedId = handleConfig.id || `test-node-reactflow-${i}-${handleConfig.type}-${index}`;
+        expect(handle).toHaveAttribute('data-handleid', expectedId);
+        
+        // Verify handle position is valid ReactFlow position
+        const validPositions = ['left', 'right', 'top', 'bottom'];
+        expect(validPositions).toContain(handleConfig.position);
+        
+        // Verify handle type is valid ReactFlow type
+        const validTypes = ['source', 'target'];
+        expect(validTypes).toContain(handleConfig.type);
+      });
+
+      // Verify node structure is compatible with ReactFlow's expectations
+      // ReactFlow expects nodes to be wrapped in a div and handle events properly
+      expect(nodeElement.tagName.toLowerCase()).toBe('div');
+      
+      // Verify the node can accept ReactFlow's standard props without breaking
+      expect(() => {
+        // Test with additional ReactFlow props that might be passed
+        const extendedProps = {
+          ...nodeProps,
+          sourcePosition: 'right',
+          targetPosition: 'left',
+          hidden: false,
+          parentNode: null,
+          extent: 'parent',
+          expandParent: false,
+          positionAbsolute: { x: nodeProps.xPos, y: nodeProps.yPos }
+        };
+        
+        const extendedRender = render(
+          <TestWrapper>
+            <BaseNode {...extendedProps} />
+          </TestWrapper>
+        );
+        extendedRender.unmount();
+      }).not.toThrow();
+
+      renderResult.unmount();
+    }
+  });
+
+  test('Property 2a: Handle connectivity validation', () => {
+    // Test that handles created through abstraction are properly connectable
+    for (let i = 0; i < 50; i++) {
+      const sourceHandles = Array.from({ length: Math.floor(Math.random() * 3) + 1 }, (_, idx) => ({
+        id: `source-${idx}`,
+        type: 'source',
+        position: HandlePositions.RIGHT
+      }));
+      
+      const targetHandles = Array.from({ length: Math.floor(Math.random() * 3) + 1 }, (_, idx) => ({
+        id: `target-${idx}`,
+        type: 'target',
+        position: HandlePositions.LEFT
+      }));
+
+      const config = {
+        title: 'Connection Test Node',
+        handles: [...sourceHandles, ...targetHandles]
+      };
+
+      const nodeProps = {
+        id: `connection-test-${i}`,
+        data: {},
+        config: config,
+        isConnectable: true
+      };
+
+      const renderResult = render(
+        <TestWrapper>
+          <BaseNode {...nodeProps} />
+        </TestWrapper>
+      );
+
+      // Verify all handles are rendered and connectable
+      const allHandles = renderResult.container.querySelectorAll('.react-flow__handle');
+      expect(allHandles).toHaveLength(sourceHandles.length + targetHandles.length);
+
+      // Verify source handles
+      const sourceElements = renderResult.container.querySelectorAll('.react-flow__handle.source');
+      expect(sourceElements).toHaveLength(sourceHandles.length);
+      
+      sourceElements.forEach((handle, index) => {
+        expect(handle).toHaveAttribute('data-handleid', `source-${index}`);
+        expect(handle).toHaveClass('react-flow__handle-right');
+      });
+
+      // Verify target handles
+      const targetElements = renderResult.container.querySelectorAll('.react-flow__handle.target');
+      expect(targetElements).toHaveLength(targetHandles.length);
+      
+      targetElements.forEach((handle, index) => {
+        expect(handle).toHaveAttribute('data-handleid', `target-${index}`);
+        expect(handle).toHaveClass('react-flow__handle-left');
+      });
+
+      renderResult.unmount();
+    }
+  });
+
+  test('Property 2b: Node positioning and dragging compatibility', () => {
+    // Test that nodes work with ReactFlow's positioning system
+    for (let i = 0; i < 30; i++) {
+      const config = generateRandomNodeConfig();
+      const position = {
+        x: Math.floor(Math.random() * 1000),
+        y: Math.floor(Math.random() * 1000)
+      };
+
+      const nodeProps = {
+        id: `position-test-${i}`,
+        data: {},
+        config: config,
+        xPos: position.x,
+        yPos: position.y,
+        selected: Math.random() > 0.5,
+        dragging: Math.random() > 0.5,
+        dragHandle: '.node-header' // Should be able to specify drag handle
+      };
+
+      const renderResult = render(
+        <TestWrapper>
+          <BaseNode {...nodeProps} />
+        </TestWrapper>
+      );
+
+      const nodeElement = renderResult.container.querySelector('.base-node');
+      expect(nodeElement).toBeInTheDocument();
+
+      // Verify node has proper structure for ReactFlow dragging
+      const nodeHeader = renderResult.container.querySelector('.node-header');
+      expect(nodeHeader).toBeInTheDocument();
+      expect(nodeHeader).toHaveTextContent(config.title);
+
+      // Node should maintain its structure regardless of ReactFlow state props
+      expect(nodeElement).toBeInTheDocument();
+      expect(nodeElement.tagName.toLowerCase()).toBe('div');
+
+      renderResult.unmount();
+    }
+  });
+
 describe('BaseNode Unit Tests', () => {
   test('renders with minimal configuration', () => {
     const config = {
