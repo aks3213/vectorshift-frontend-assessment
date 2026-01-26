@@ -1,9 +1,10 @@
 // textNode.js
 
 import { useState } from 'react';
-import { Handle, Position } from 'reactflow';
+import { createNode, createNodeConfig, CommonHandles } from '../components/nodeFactory';
 
-export const TextNode = ({ id, data }) => {
+// Text node content component
+const TextNodeContent = ({ id, data }) => {
   const [currText, setCurrText] = useState(data?.text || '{{input}}');
 
   const handleTextChange = (e) => {
@@ -11,25 +12,25 @@ export const TextNode = ({ id, data }) => {
   };
 
   return (
-    <div style={{width: 200, height: 80, border: '1px solid black'}}>
-      <div>
-        <span>Text</span>
-      </div>
-      <div>
-        <label>
-          Text:
-          <input 
-            type="text" 
-            value={currText} 
-            onChange={handleTextChange} 
-          />
-        </label>
-      </div>
-      <Handle
-        type="source"
-        position={Position.Right}
-        id={`${id}-output`}
-      />
+    <div>
+      <label>
+        Text:
+        <input 
+          type="text" 
+          value={currText} 
+          onChange={handleTextChange} 
+          style={{ width: '100%' }}
+        />
+      </label>
     </div>
   );
-}
+};
+
+// Create TextNode using the factory
+export const TextNode = createNode(
+  createNodeConfig({
+    title: 'Text',
+    content: TextNodeContent,
+    handles: ({ id }) => CommonHandles.singleSource(id)
+  })
+);

@@ -1,9 +1,10 @@
 // outputNode.js
 
 import { useState } from 'react';
-import { Handle, Position } from 'reactflow';
+import { createNode, createNodeConfig, CommonHandles } from '../components/nodeFactory';
 
-export const OutputNode = ({ id, data }) => {
+// Output node content component
+const OutputNodeContent = ({ id, data }) => {
   const [currName, setCurrName] = useState(data?.outputName || id.replace('customOutput-', 'output_'));
   const [outputType, setOutputType] = useState(data.outputType || 'Text');
 
@@ -16,32 +17,32 @@ export const OutputNode = ({ id, data }) => {
   };
 
   return (
-    <div style={{width: 200, height: 80, border: '1px solid black'}}>
-      <Handle
-        type="target"
-        position={Position.Left}
-        id={`${id}-value`}
-      />
-      <div>
-        <span>Output</span>
-      </div>
-      <div>
-        <label>
-          Name:
-          <input 
-            type="text" 
-            value={currName} 
-            onChange={handleNameChange} 
-          />
-        </label>
-        <label>
-          Type:
-          <select value={outputType} onChange={handleTypeChange}>
-            <option value="Text">Text</option>
-            <option value="File">Image</option>
-          </select>
-        </label>
-      </div>
+    <div>
+      <label>
+        Name:
+        <input 
+          type="text" 
+          value={currName} 
+          onChange={handleNameChange} 
+          style={{ width: '100%', marginBottom: '4px' }}
+        />
+      </label>
+      <label>
+        Type:
+        <select value={outputType} onChange={handleTypeChange} style={{ width: '100%' }}>
+          <option value="Text">Text</option>
+          <option value="File">Image</option>
+        </select>
+      </label>
     </div>
   );
-}
+};
+
+// Create OutputNode using the factory
+export const OutputNode = createNode(
+  createNodeConfig({
+    title: 'Output',
+    content: OutputNodeContent,
+    handles: ({ id }) => CommonHandles.singleTarget(id)
+  })
+);
