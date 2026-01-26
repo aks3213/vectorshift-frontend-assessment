@@ -1,9 +1,10 @@
 // textNode.js
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import styled from '@emotion/styled';
 import { createNode, createNodeConfig, CommonHandles } from '../components/nodeFactory';
 import { FormField, Label, getThemeValue } from '../styled';
+import { extractVariableNames } from '../utils/variableParser';
 
 // Constants for auto-resize functionality
 const MIN_WIDTH = 180;
@@ -100,10 +101,11 @@ const measureText = (text, font, maxWidth) => {
   return { width, height, lineCount: lines.length };
 };
 
-// Text node content component with auto-resize functionality
+// Text node content component with auto-resize functionality and variable detection
 const TextNodeContent = ({ id, data }) => {
   const [currText, setCurrText] = useState(data?.text || '{{input}}');
   const [dimensions, setDimensions] = useState({ width: MIN_WIDTH, height: MIN_HEIGHT });
+  const [detectedVariables, setDetectedVariables] = useState([]);
   const textareaRef = useRef(null);
 
   // Function to update dimensions based on text content
@@ -132,17 +134,30 @@ const TextNodeContent = ({ id, data }) => {
     }
   };
 
+  // Function to update detected variables
+  const updateDetectedVariables = useCallback((text) => {
+    const variables = extractVariableNames(text);
+    setDetectedVariables(variables);
+    
+    // Log detected variables for debugging (can be removed in production)
+    if (variables.length > 0) {
+      console.log(`Text Node ${id}: Detected variables:`, variables);
+    }
+  }, [id]);
+
   // Handle text changes
   const handleTextChange = (e) => {
     const newText = e.target.value;
     setCurrText(newText);
     updateDimensions(newText);
+    updateDetectedVariables(newText);
   };
 
-  // Update dimensions when component mounts or text changes
+  // Update dimensions and variables when component mounts or text changes
   useEffect(() => {
     updateDimensions(currText);
-  }, [currText]);
+    updateDetectedVariables(currText);
+  }, [currText, updateDetectedVariables]);
 
   return (
     <ResizableContainer width={dimensions.width}>
@@ -155,6 +170,16 @@ const TextNodeContent = ({ id, data }) => {
           placeholder="Enter your text here..."
           rows={1}
         />
+        {detectedVariables.length > 0 && (
+          <div style={{ 
+            marginTop: '8px', 
+            fontSize: '12px', 
+            color: '#64748B',
+            fontStyle: 'italic'
+          }}>
+            Variables detected: {detectedVariables.join(', ')}
+          </div>
+        )}
       </FormField>
     </ResizableContainer>
   );
