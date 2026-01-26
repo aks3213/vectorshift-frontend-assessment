@@ -124,24 +124,27 @@ export const Input = styled.input`
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: ${getThemeValue('spacing.xs')} ${getThemeValue('spacing.sm')};
-  border: 1px solid ${getThemeValue('colors.border')};
-  border-radius: ${getThemeValue('borderRadius.sm')};
+  padding: ${getThemeValue('spacing.sm')} ${getThemeValue('spacing.md')};
+  border: 2px solid ${getThemeValue('colors.border')};
+  border-radius: ${getThemeValue('borderRadius.md')};
   font-size: ${getThemeValue('typography.fontSize.sm')};
   font-family: ${getThemeValue('typography.fontFamily.primary')};
   color: ${getThemeValue('colors.text.primary')};
   background-color: ${getThemeValue('colors.surface')};
   transition: all ${getThemeValue('transitions.fast')};
   box-sizing: border-box;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 
   &:focus {
     outline: none;
     border-color: ${getThemeValue('colors.secondary')};
-    box-shadow: 0 0 0 2px ${props => props.theme.colors.secondary}20;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 3px ${props => props.theme.colors.secondary}20;
+    background-color: #ffffff;
   }
 
   &:hover {
     border-color: ${getThemeValue('colors.text.secondary')};
+    background-color: #ffffff;
   }
 `;
 
@@ -149,9 +152,9 @@ export const Select = styled.select`
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: ${getThemeValue('spacing.xs')} ${getThemeValue('spacing.sm')};
-  border: 1px solid ${getThemeValue('colors.border')};
-  border-radius: ${getThemeValue('borderRadius.sm')};
+  padding: ${getThemeValue('spacing.sm')} ${getThemeValue('spacing.md')};
+  border: 2px solid ${getThemeValue('colors.border')};
+  border-radius: ${getThemeValue('borderRadius.md')};
   font-size: ${getThemeValue('typography.fontSize.sm')};
   font-family: ${getThemeValue('typography.fontFamily.primary')};
   color: ${getThemeValue('colors.text.primary')};
@@ -159,15 +162,18 @@ export const Select = styled.select`
   transition: all ${getThemeValue('transitions.fast')};
   cursor: pointer;
   box-sizing: border-box;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 
   &:focus {
     outline: none;
     border-color: ${getThemeValue('colors.secondary')};
-    box-shadow: 0 0 0 2px ${props => props.theme.colors.secondary}20;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 3px ${props => props.theme.colors.secondary}20;
+    background-color: #ffffff;
   }
 
   &:hover {
     border-color: ${getThemeValue('colors.text.secondary')};
+    background-color: #ffffff;
   }
 `;
 

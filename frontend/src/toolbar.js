@@ -5,10 +5,10 @@ import { DraggableNode } from './draggableNode';
 import { Container, FlexContainer, Text, getThemeValue } from './styled';
 
 const ToolbarContainer = styled(Container)`
-  background-color: ${getThemeValue('colors.surface')};
-  border-bottom: 1px solid ${getThemeValue('colors.border')};
-  box-shadow: ${getThemeValue('shadows.sm')};
-  padding: ${getThemeValue('spacing.lg')};
+  background: linear-gradient(135deg, ${getThemeValue('colors.surface')} 0%, #fafbfc 100%);
+  border-bottom: 2px solid ${getThemeValue('colors.border')};
+  box-shadow: ${getThemeValue('shadows.lg')};
+  padding: ${getThemeValue('spacing.xl')};
   position: sticky;
   top: 0;
   z-index: ${getThemeValue('zIndex.sticky')};

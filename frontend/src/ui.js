@@ -23,18 +23,18 @@ import 'reactflow/dist/style.css';
 const PipelineContainer = styled.div`
   width: 100%;
   height: 70vh;
-  background-color: ${getThemeValue('colors.background')};
-  border: 1px solid ${getThemeValue('colors.border')};
-  border-radius: ${getThemeValue('borderRadius.lg')};
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 2px solid ${getThemeValue('colors.border')};
+  border-radius: ${getThemeValue('borderRadius.xl')};
   overflow: hidden;
-  box-shadow: ${getThemeValue('shadows.md')};
+  box-shadow: ${getThemeValue('shadows.nodeSelected')};
   position: relative;
 
   .react-flow__controls {
     background-color: ${getThemeValue('colors.surface')};
-    border: 1px solid ${getThemeValue('colors.border')};
-    border-radius: ${getThemeValue('borderRadius.md')};
-    box-shadow: ${getThemeValue('shadows.sm')};
+    border: 2px solid ${getThemeValue('colors.border')};
+    border-radius: ${getThemeValue('borderRadius.lg')};
+    box-shadow: ${getThemeValue('shadows.md')};
   }
 
   .react-flow__controls-button {
@@ -42,10 +42,12 @@ const PipelineContainer = styled.div`
     border-bottom: 1px solid ${getThemeValue('colors.border')};
     color: ${getThemeValue('colors.text.primary')};
     transition: all ${getThemeValue('transitions.fast')};
+    font-weight: ${getThemeValue('typography.fontWeight.medium')};
 
     &:hover {
-      background-color: ${getThemeValue('colors.background')};
-      color: ${getThemeValue('colors.secondary')};
+      background-color: ${getThemeValue('colors.secondary')};
+      color: ${getThemeValue('colors.text.inverse')};
+      transform: scale(1.05);
     }
 
     &:last-child {
@@ -55,35 +57,44 @@ const PipelineContainer = styled.div`
 
   .react-flow__minimap {
     background-color: ${getThemeValue('colors.surface')};
-    border: 1px solid ${getThemeValue('colors.border')};
-    border-radius: ${getThemeValue('borderRadius.md')};
-    box-shadow: ${getThemeValue('shadows.sm')};
+    border: 2px solid ${getThemeValue('colors.border')};
+    border-radius: ${getThemeValue('borderRadius.lg')};
+    box-shadow: ${getThemeValue('shadows.md')};
   }
 
   .react-flow__background {
-    background-color: ${getThemeValue('colors.background')};
+    background-color: transparent;
   }
 
   .react-flow__edge-path {
     stroke: ${getThemeValue('colors.secondary')};
-    stroke-width: 2;
+    stroke-width: 3;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
   }
 
   .react-flow__connection-line {
     stroke: ${getThemeValue('colors.secondary')};
-    stroke-width: 2;
+    stroke-width: 3;
+    stroke-dasharray: 5, 5;
+    animation: dash 1s linear infinite;
+  }
+
+  @keyframes dash {
+    to {
+      stroke-dashoffset: -10;
+    }
   }
 
   .react-flow__handle {
     background-color: ${getThemeValue('colors.secondary')};
-    border: 2px solid ${getThemeValue('colors.surface')};
-    width: 10px;
-    height: 10px;
+    border: 3px solid ${getThemeValue('colors.surface')};
+    width: 12px;
+    height: 12px;
     transition: all ${getThemeValue('transitions.fast')};
 
     &:hover {
       background-color: ${getThemeValue('colors.primary')};
-      transform: scale(1.2);
+      transform: scale(1.3);
     }
   }
 `;
@@ -192,13 +203,18 @@ export const PipelineUI = () => {
                 <Controls />
                 <MiniMap 
                   nodeColor={(node) => {
-                    switch (node.type) {
-                      case 'customInput': return '#10B981';
-                      case 'customOutput': return '#EF4444';
-                      case 'llm': return '#6366F1';
-                      case 'text': return '#F59E0B';
-                      default: return '#64748B';
-                    }
+                    const colors = {
+                      'customInput': '#10B981',
+                      'customOutput': '#EF4444',
+                      'llm': '#6366F1',
+                      'text': '#F59E0B',
+                      'filter': '#06B6D4',
+                      'transform': '#8B5CF6',
+                      'aggregator': '#EC4899',
+                      'conditional': '#F97316',
+                      'delay': '#64748B'
+                    };
+                    return colors[node.type] || '#64748B';
                   }}
                   maskColor="rgba(248, 250, 252, 0.8)"
                 />
