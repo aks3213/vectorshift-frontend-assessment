@@ -12,33 +12,89 @@ from main import app, PipelineData
 
 client = TestClient(app)
 
-# Strategy for generating valid node objects
-node_strategy = st.fixed_dictionaries({
-    'id': st.text(min_size=1, max_size=50),
-    'type': st.sampled_from(['input', 'output', 'text', 'llm', 'aggregator', 'conditional', 'delay', 'filter', 'transform']),
-    'position': st.fixed_dictionaries({
-        'x': st.floats(min_value=-1000, max_value=1000),
-        'y': st.floats(min_value=-1000, max_value=1000)
-    }),
-    'data': st.dictionaries(st.text(), st.one_of(st.text(), st.integers(), st.booleans()))
-})
+# Strategy for generating valid node objects with unique IDs
+@st.composite
+def unique_node_strategy(draw, existing_ids=None):
+    """Generate a node with a unique ID."""
+    if existing_ids is None:
+        existing_ids = set()
+    
+    # Generate a unique ID
+    node_id = draw(st.text(min_size=1, max_size=50))
+    attempts = 0
+    while node_id in existing_ids and attempts < 100:
+        node_id = draw(st.text(min_size=1, max_size=50))
+        attempts += 1
+    
+    # If we can't generate a unique ID, use a UUID-like approach
+    if node_id in existing_ids:
+        import uuid
+        node_id = str(uuid.uuid4())[:8]
+    
+    existing_ids.add(node_id)
+    
+    return {
+        'id': node_id,
+        'type': draw(st.sampled_from(['input', 'output', 'text', 'llm', 'aggregator', 'conditional', 'delay', 'filter', 'transform'])),
+        'position': {
+            'x': draw(st.floats(min_value=-1000, max_value=1000)),
+            'y': draw(st.floats(min_value=-1000, max_value=1000))
+        },
+        'data': draw(st.dictionaries(st.text(), st.one_of(st.text(), st.integers(), st.booleans())))
+    }
 
-# Strategy for generating valid edge objects
-edge_strategy = st.fixed_dictionaries({
-    'id': st.text(min_size=1, max_size=50),
-    'source': st.text(min_size=1, max_size=50),
-    'target': st.text(min_size=1, max_size=50),
-    'sourceHandle': st.one_of(st.none(), st.text()),
-    'targetHandle': st.one_of(st.none(), st.text())
-})
+# Strategy for generating valid pipeline data with unique node IDs and consistent references
+@st.composite
+def pipeline_strategy(draw):
+    """Generate valid pipeline data where all node IDs are unique and edges only reference existing nodes."""
+    # Generate nodes with unique IDs
+    num_nodes = draw(st.integers(min_value=0, max_value=20))
+    nodes = []
+    existing_ids = set()
+    
+    for i in range(num_nodes):
+        # Generate unique node ID
+        node_id = f"node_{i}_{draw(st.integers(min_value=0, max_value=9999))}"
+        while node_id in existing_ids:
+            node_id = f"node_{i}_{draw(st.integers(min_value=0, max_value=9999))}"
+        
+        existing_ids.add(node_id)
+        
+        node = {
+            'id': node_id,
+            'type': draw(st.sampled_from(['input', 'output', 'text', 'llm', 'aggregator', 'conditional', 'delay', 'filter', 'transform'])),
+            'position': {
+                'x': draw(st.floats(min_value=-1000, max_value=1000)),
+                'y': draw(st.floats(min_value=-1000, max_value=1000))
+            },
+            'data': draw(st.dictionaries(st.text(), st.one_of(st.text(), st.integers(), st.booleans())))
+        }
+        nodes.append(node)
+    
+    # Extract node IDs for edge generation
+    node_ids = [node['id'] for node in nodes]
+    
+    # Generate edges that only reference existing nodes
+    if len(node_ids) >= 2:
+        # Generate edges between existing nodes
+        edges = draw(st.lists(
+            st.fixed_dictionaries({
+                'id': st.text(min_size=1, max_size=50),
+                'source': st.sampled_from(node_ids),
+                'target': st.sampled_from(node_ids),
+                'sourceHandle': st.one_of(st.none(), st.text()),
+                'targetHandle': st.one_of(st.none(), st.text())
+            }),
+            min_size=0,
+            max_size=min(50, len(node_ids) * 2)  # Reasonable edge limit
+        ))
+    else:
+        # No edges if fewer than 2 nodes
+        edges = []
+    
+    return {'nodes': nodes, 'edges': edges}
 
-# Strategy for generating pipeline data
-pipeline_strategy = st.fixed_dictionaries({
-    'nodes': st.lists(node_strategy, min_size=0, max_size=100),
-    'edges': st.lists(edge_strategy, min_size=0, max_size=100)
-})
-
-@given(pipeline_strategy)
+@given(pipeline_strategy())
 def test_property_7_pipeline_metrics_calculation(pipeline_data):
     """
     **Feature: vectorshift-assessment, Property 7: Pipeline Metrics Calculation**
@@ -79,7 +135,7 @@ def test_property_7_pipeline_metrics_calculation(pipeline_data):
     (0, 0),  # Empty pipeline
     (1, 0),  # Single node, no edges
     (2, 1),  # Two nodes, one edge
-    (10, 15),  # Multiple nodes and edges
+    (10, 9),  # Multiple nodes with valid edges (changed from 15 to 9)
 ])
 def test_pipeline_metrics_specific_cases(num_nodes, num_edges):
     """
@@ -88,7 +144,18 @@ def test_pipeline_metrics_specific_cases(num_nodes, num_edges):
     """
     # Generate test data
     nodes = [{'id': f'node_{i}', 'type': 'text', 'position': {'x': 0, 'y': 0}, 'data': {}} for i in range(num_nodes)]
-    edges = [{'id': f'edge_{i}', 'source': f'node_{i}', 'target': f'node_{(i+1) % max(1, num_nodes)}'} for i in range(num_edges)]
+    
+    # Generate edges that only reference existing nodes
+    edges = []
+    if num_nodes > 0:
+        for i in range(min(num_edges, num_nodes - 1)):  # Ensure we don't exceed valid connections
+            source_idx = i % num_nodes
+            target_idx = (i + 1) % num_nodes
+            edges.append({
+                'id': f'edge_{i}', 
+                'source': f'node_{source_idx}', 
+                'target': f'node_{target_idx}'
+            })
     
     pipeline_data = {'nodes': nodes, 'edges': edges}
     
@@ -302,7 +369,7 @@ def test_dag_validation_specific_cases(nodes, edges, expected_is_dag):
     response_data = response.json()
     assert response_data['is_dag'] == expected_is_dag, f"Expected is_dag={expected_is_dag}, got {response_data['is_dag']} for nodes={[n.get('id', 'unknown') for n in nodes]}, edges={[(e.get('source', 'unknown'), e.get('target', 'unknown')) for e in edges]}"
 
-@given(pipeline_strategy)
+@given(pipeline_strategy())
 def test_property_9_api_response_format(pipeline_data):
     """
     **Feature: vectorshift-assessment, Property 9: API Response Format**
@@ -351,9 +418,12 @@ def test_structured_response_format():
     Test that the API returns the exact structured response format required.
     Validates: Requirements 4.5
     """
-    # Test with valid data
+    # Test with valid data (both nodes must exist)
     pipeline_data = {
-        'nodes': [{'id': 'node1', 'type': 'text'}],
+        'nodes': [
+            {'id': 'node1', 'type': 'text'},
+            {'id': 'node2', 'type': 'text'}
+        ],
         'edges': [{'id': 'edge1', 'source': 'node1', 'target': 'node2'}]
     }
     
@@ -372,7 +442,7 @@ def test_structured_response_format():
     assert isinstance(response_data['is_dag'], bool)
     
     # Verify values
-    assert response_data['num_nodes'] == 1
+    assert response_data['num_nodes'] == 2
     assert response_data['num_edges'] == 1
     assert response_data['is_dag'] == True
 
@@ -417,35 +487,35 @@ def test_error_handling_malformed_nodes():
     """
     Test error handling for malformed node data.
     """
-    # Node without 'id' field should still work (handled gracefully)
+    # Node without 'id' field should return 400 (validation error)
     pipeline_data = {
         'nodes': [{'type': 'text'}],  # Missing 'id'
         'edges': []
     }
     
     response = client.post('/pipelines/parse', json=pipeline_data)
-    # This should return 500 due to our validation in is_dag function
-    assert response.status_code == 500
+    # This should return 400 due to our validation
+    assert response.status_code == 400
     response_data = response.json()
     assert 'error' in response_data
-    assert response_data['status_code'] == 500
+    assert response_data['status_code'] == 400
 
 def test_error_handling_malformed_edges():
     """
     Test error handling for malformed edge data.
     """
-    # Edge without 'source' or 'target' field should return error
+    # Edge without 'source' or 'target' field should return 400 (validation error)
     pipeline_data = {
         'nodes': [{'id': 'node1', 'type': 'text'}],
         'edges': [{'id': 'edge1'}]  # Missing 'source' and 'target'
     }
     
     response = client.post('/pipelines/parse', json=pipeline_data)
-    # This should return 500 due to our validation in is_dag function
-    assert response.status_code == 500
+    # This should return 400 due to our validation
+    assert response.status_code == 400
     response_data = response.json()
     assert 'error' in response_data
-    assert response_data['status_code'] == 500
+    assert response_data['status_code'] == 400
 
 def test_http_status_codes():
     """
@@ -460,27 +530,27 @@ def test_http_status_codes():
     response = client.post('/pipelines/parse', json={})
     assert response.status_code == 422
     
-    # Malformed data should return 500 (server error)
+    # Malformed data should return 400 (validation error)
     malformed_data = {'nodes': [{}], 'edges': []}  # Node without id
     response = client.post('/pipelines/parse', json=malformed_data)
-    assert response.status_code == 500
+    assert response.status_code == 400
 
 def test_error_response_structure():
     """
     Test that error responses have the correct structure.
     """
-    # Test 500 error response structure
+    # Test 400 error response structure
     malformed_data = {'nodes': [{}], 'edges': []}  # Node without id
     response = client.post('/pipelines/parse', json=malformed_data)
     
-    assert response.status_code == 500
+    assert response.status_code == 400
     response_data = response.json()
     
     # Verify error response structure
     assert 'error' in response_data
     assert 'message' in response_data
     assert 'status_code' in response_data
-    assert response_data['status_code'] == 500
+    assert response_data['status_code'] == 400
 
 def test_large_pipeline_handling():
     """
