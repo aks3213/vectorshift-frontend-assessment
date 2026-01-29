@@ -47,9 +47,9 @@ const AggregatorNodeContent = ({ id, data }) => {
 
 // Custom handles for aggregator - multiple inputs, single output
 const aggregatorHandles = (id) => [
-  createHandle(`${id}-input1`, 'target', HandlePositions.LEFT, { top: '25%' }),
-  createHandle(`${id}-input2`, 'target', HandlePositions.LEFT, { top: '50%' }),
-  createHandle(`${id}-input3`, 'target', HandlePositions.LEFT, { top: '75%' }),
+  createHandle(`${id}-input1`, 'target', HandlePositions.LEFT),
+  createHandle(`${id}-input2`, 'target', HandlePositions.LEFT),
+  createHandle(`${id}-input3`, 'target', HandlePositions.LEFT),
   createHandle(`${id}-output`, 'source', HandlePositions.RIGHT)
 ];
 

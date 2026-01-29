@@ -80,7 +80,7 @@ const NodeHeader = styled('div', {
   color: ${props => getNodeTypeColor(props.nodeType)};
   background: rgba(255, 255, 255, 0.9);
   padding: ${getThemeValue('spacing.sm')} ${getThemeValue('spacing.md')};
-  border-radius: ${getThemeValue('borderRadius.sm')};
+  border-radius: calc(${getThemeValue('borderRadius.lg')} - 2px) calc(${getThemeValue('borderRadius.lg')} - 2px) 0 0;
   margin: -${getThemeValue('spacing.lg')} -${getThemeValue('spacing.lg')} ${getThemeValue('spacing.md')} -${getThemeValue('spacing.lg')};
   text-align: center;
   border-bottom: 2px solid ${props => getNodeTypeColor(props.nodeType)};
@@ -230,35 +230,61 @@ export const BaseNode = ({ id, data, config, selected, ...props }) => {
     if (typeof handles === 'function') {
       handles = handles({ id, data, selected, nodeType, ...props });
     }
-    
-    return handles.map((handleConfig, index) => {
-      const {
-        id: handleId,
-        type,
-        position,
-        style: handleStyle = {},
-        label,
-        ...handleProps
-      } = handleConfig;
 
-      return (
-        <StyledHandle
-          key={handleId || `handle-${index}`}
-          id={handleId || `${id}-${type}-${index}`}
-          type={type}
-          position={position}
-          style={{ ...handleStyle, position: 'relative' }}
-          nodeType={nodeType}
-          {...handleProps}
-        >
-          {label && (
-            <HandleLabel position={position}>
-              {label}
-            </HandleLabel>
-          )}
-        </StyledHandle>
-      );
-    });
+    // Group handles by position
+    const handlesByPosition = handles.reduce((acc, handle) => {
+      acc[handle.position] = acc[handle.position] || [];
+      acc[handle.position].push(handle);
+      return acc;
+    }, {});
+
+    const renderedHandles = [];
+
+    for (const position in handlesByPosition) {
+      const group = handlesByPosition[position];
+      const count = group.length;
+
+      group.forEach((handleConfig, index) => {
+        const {
+          id: handleId,
+          type,
+          position,
+          style: handleStyle = {},
+          label,
+          ...handleProps
+        } = handleConfig;
+
+        const calculatedStyle = { ...handleStyle };
+
+        if (count > 1) {
+          if (position === Position.Left || position === Position.Right) {
+            calculatedStyle.top = `${(100 * (index + 1)) / (count + 1)}%`;
+          } else if (position === Position.Top || position === Position.Bottom) {
+            calculatedStyle.left = `${(100 * (index + 1)) / (count + 1)}%`;
+          }
+        }
+
+        renderedHandles.push(
+          <StyledHandle
+            key={handleId || `handle-${position}-${index}`}
+            id={handleId || `${id}-${type}-${position}-${index}`}
+            type={type}
+            position={position}
+            style={calculatedStyle}
+            nodeType={nodeType}
+            {...handleProps}
+          >
+            {label && (
+              <HandleLabel position={position}>
+                {label}
+              </HandleLabel>
+            )}
+          </StyledHandle>
+        );
+      });
+    }
+    
+    return renderedHandles;
   };
 
   return (

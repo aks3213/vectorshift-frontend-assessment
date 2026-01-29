@@ -50,8 +50,8 @@ const ConditionalNodeContent = ({ id, data }) => {
 // Custom handles for conditional - single input, two outputs (true/false)
 const conditionalHandles = (id) => [
   createHandle(`${id}-input`, 'target', HandlePositions.LEFT),
-  createHandle(`${id}-true`, 'source', HandlePositions.RIGHT, { top: '33%' }),
-  createHandle(`${id}-false`, 'source', HandlePositions.RIGHT, { top: '67%' })
+  createHandle(`${id}-true`, 'source', HandlePositions.RIGHT),
+  createHandle(`${id}-false`, 'source', HandlePositions.RIGHT)
 ];
 
 // Create ConditionalNode using the factory

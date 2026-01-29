@@ -78,8 +78,8 @@ export const CommonHandles = {
   
   // LLM specific handles
   llmHandles: (id) => [
-    createHandle(`${id}-system`, 'target', HandlePositions.LEFT, { top: `${100/3}%` }),
-    createHandle(`${id}-prompt`, 'target', HandlePositions.LEFT, { top: `${200/3}%` }),
+    createHandle(`${id}-system`, 'target', HandlePositions.LEFT),
+    createHandle(`${id}-prompt`, 'target', HandlePositions.LEFT),
     createHandle(`${id}-response`, 'source', HandlePositions.RIGHT)
   ]
 };
