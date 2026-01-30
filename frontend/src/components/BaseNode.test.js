@@ -113,12 +113,19 @@ describe('BaseNode Property Tests', () => {
       expect(screen.getByText(config.title)).toBeInTheDocument();
 
       // Verify handles are rendered correctly
-      const handles = renderResult.container.querySelectorAll('.react-flow__handle');
-      expect(handles).toHaveLength(config.handles.length);
+      const renderedHandles = renderResult.container.querySelectorAll('.react-flow__handle');
+      expect(renderedHandles).toHaveLength(config.handles.length);
+
+      // Create a map of rendered handles by their ID
+      const renderedHandlesById = {};
+      renderedHandles.forEach(handle => {
+        renderedHandlesById[handle.getAttribute('data-handleid')] = handle;
+      });
 
       // Verify each handle has correct attributes
-      config.handles.forEach((handleConfig, index) => {
-        const handle = handles[index];
+      config.handles.forEach((handleConfig) => {
+        const handle = renderedHandlesById[handleConfig.id];
+        expect(handle).toBeDefined();
         expect(handle).toHaveClass(`react-flow__handle-${handleConfig.position}`);
         expect(handle).toHaveClass(handleConfig.type); // ReactFlow adds type as a class directly
       });
@@ -156,11 +163,16 @@ describe('BaseNode Property Tests', () => {
       expect(renderedHandles).toHaveLength(handles.length);
 
       // Verify each handle has unique ID and correct type/position
-      handles.forEach((handleConfig, index) => {
-        const handle = renderedHandles[index];
-        const expectedId = handleConfig.id || `test-node-handles-${i}-${handleConfig.type}-${index}`;
-        
-        expect(handle).toHaveAttribute('data-handleid', expectedId);
+      const renderedHandlesById = {};
+      renderedHandles.forEach(handle => {
+        renderedHandlesById[handle.getAttribute('data-handleid')] = handle;
+      });
+
+      handles.forEach((handleConfig) => {
+        const handle = renderedHandlesById[handleConfig.id];
+        expect(handle).toBeDefined();
+
+        expect(handle).toHaveAttribute('data-handleid', handleConfig.id);
         expect(handle).toHaveClass(handleConfig.type); // ReactFlow adds type as a class directly
         expect(handle).toHaveClass(`react-flow__handle-${handleConfig.position}`);
 
@@ -269,8 +281,14 @@ describe('BaseNode Property Tests', () => {
       expect(handles).toHaveLength(config.handles.length);
 
       // Each handle should have ReactFlow-compatible attributes
-      config.handles.forEach((handleConfig, index) => {
-        const handle = handles[index];
+      const renderedHandlesById = {};
+      handles.forEach(handle => {
+        renderedHandlesById[handle.getAttribute('data-handleid')] = handle;
+      });
+
+      config.handles.forEach((handleConfig) => {
+        const handle = renderedHandlesById[handleConfig.id];
+        expect(handle).toBeDefined();
         
         // Verify handle has required ReactFlow classes
         expect(handle).toHaveClass('react-flow__handle');
@@ -278,7 +296,7 @@ describe('BaseNode Property Tests', () => {
         expect(handle).toHaveClass(handleConfig.type);
         
         // Verify handle has proper data attributes for ReactFlow
-        const expectedId = handleConfig.id || `test-node-reactflow-${i}-${handleConfig.type}-${index}`;
+        const expectedId = handleConfig.id || `test-node-reactflow-${i}-${handleConfig.type}-0`;
         expect(handle).toHaveAttribute('data-handleid', expectedId);
         
         // Verify handle position is valid ReactFlow position
@@ -525,12 +543,18 @@ describe('BaseNode Property Tests', () => {
         expect(handles).toHaveLength(config.handles.length);
 
         // Verify each handle has correct ReactFlow classes and attributes
-        config.handles.forEach((handleConfig, index) => {
-          const handle = handles[index];
-          expect(handle).toHaveClass('react-flow__handle');
-          expect(handle).toHaveClass(`react-flow__handle-${handleConfig.position}`);
-          expect(handle).toHaveClass(handleConfig.type);
-          expect(handle).toHaveAttribute('data-handleid', handleConfig.id);
+        const renderedHandlesById = {};
+        handles.forEach(handle => {
+            renderedHandlesById[handle.getAttribute('data-handleid')] = handle;
+        });
+
+        config.handles.forEach((handleConfig) => {
+            const handle = renderedHandlesById[handleConfig.id];
+            expect(handle).toBeDefined();
+            expect(handle).toHaveClass('react-flow__handle');
+            expect(handle).toHaveClass(`react-flow__handle-${handleConfig.position}`);
+            expect(handle).toHaveClass(handleConfig.type);
+            expect(handle).toHaveAttribute('data-handleid', handleConfig.id);
         });
 
         // Verify node structure is responsive-friendly

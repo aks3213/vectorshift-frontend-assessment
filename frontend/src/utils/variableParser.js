@@ -45,7 +45,7 @@ export const parseVariables = (text) => {
   VARIABLE_REGEX.lastIndex = 0;
   
   while ((match = VARIABLE_REGEX.exec(text)) !== null) {
-    const variableName = match[1].trim();
+    const variableName = match[1];
     
     // Only include variables with valid JavaScript names
     if (isValidJavaScriptVariableName(variableName)) {
