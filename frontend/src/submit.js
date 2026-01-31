@@ -107,6 +107,7 @@ const ErrorButton = styled(Button)`
 export const SubmitButton = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [successData, setSuccessData] = useState(null);
     const [retryCount, setRetryCount] = useState(0);
     const nodes = useStore(state => state.nodes);
     const edges = useStore(state => state.edges);
@@ -276,7 +277,7 @@ export const SubmitButton = () => {
             
             // Show enhanced success alert with formatted pipeline statistics
             const alertMessage = formatPipelineAlert(response);
-            alert(alertMessage);
+            setSuccessData({ title: 'Pipeline Submitted Successfully!', message: alertMessage });
             
         } catch (error) {
             console.error('Pipeline submission failed:', error);
@@ -336,6 +337,18 @@ export const SubmitButton = () => {
                                     {action}
                                 </ErrorButton>
                             ))}
+                        </ErrorActions>
+                    </ErrorContent>
+                </ErrorModal>
+            )}
+
+            {successData && (
+                <ErrorModal onClick={() => setSuccessData(null)}>
+                    <ErrorContent>
+                        <ErrorTitle>{successData.title}</ErrorTitle>
+                        <ErrorMessage>{successData.message}</ErrorMessage>
+                        <ErrorActions>
+                            <ErrorButton onClick={() => setSuccessData(null)}>Close</ErrorButton>
                         </ErrorActions>
                     </ErrorContent>
                 </ErrorModal>
